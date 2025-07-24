@@ -1,0 +1,286 @@
+basePath: /api/v1
+definitions:
+  schemas.CreateSub:
+    properties:
+      end_date:
+        format: nullable
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  schemas.FullSubInfo:
+    properties:
+      end_date:
+        format: nullable
+        type: string
+      id:
+        type: integer
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  schemas.FullUpdateSub:
+    properties:
+      end_date:
+        format: nullable
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  schemas.PatchUpdateSub:
+    properties:
+      end_date:
+        format: nullable
+        type: string
+      price:
+        format: nullable
+        type: string
+      service_name:
+        format: nullable
+        type: string
+      start_date:
+        format: nullable
+        type: string
+      user_id:
+        format: nullable
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  title: Subscription API With Swagger
+  version: "1.0"
+paths:
+  /subs:
+    get:
+      description: Get all subscriptions from database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/schemas.FullSubInfo'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get subscriptions
+      tags:
+      - Subs
+    post:
+      consumes:
+      - application/json
+      description: Create new subscription record
+      parameters:
+      - description: Subscription data
+        in: body
+        name: newSubscription
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateSub'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create subscription
+      tags:
+      - Subs
+  /subs/{id}:
+    delete:
+      description: Delete subscription from database
+      parameters:
+      - description: Subscription ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete subscription
+      tags:
+      - Subs
+    get:
+      description: Get subscription from database by id
+      parameters:
+      - description: Sub ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.FullSubInfo'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get subscription info
+      tags:
+      - Subs
+    patch:
+      consumes:
+      - application/json
+      description: Update the passed fields of subscription
+      parameters:
+      - description: Subscription ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Subscription data
+        in: body
+        name: updateFields
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.PatchUpdateSub'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update subscription
+      tags:
+      - Subs
+    put:
+      consumes:
+      - application/json
+      description: Update all fields of subscription
+      parameters:
+      - description: Subscription ID
+        format: uint
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Subscription data
+        in: body
+        name: updateFields
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.FullUpdateSub'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update subscription
+      tags:
+      - Subs
+swagger: "2.0"
