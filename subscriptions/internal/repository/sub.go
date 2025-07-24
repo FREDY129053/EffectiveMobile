@@ -85,6 +85,7 @@ func (r *SubscriptionRepository) UpdateRecord(id uint, fields map[string]any) er
 
 	return nil
 }
+
 func (r *SubscriptionRepository) DeleteRecord(id uint) error {
 	if err := r.DB.Take(&models.Subscription{}, id).Error; err != nil {
 		return gorm.ErrRecordNotFound

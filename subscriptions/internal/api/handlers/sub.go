@@ -5,9 +5,18 @@ import (
 	"strconv"
 	"subscriptions/rest-service/internal/schemas"
 	"subscriptions/rest-service/internal/service"
+	"subscriptions/rest-service/pkg/helpers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
+
+var validate *validator.Validate
+
+func init() {
+	validate = validator.New()
+	validate.RegisterValidation("mm_yyyy_date", helpers.ValidateDateMMYYYYFormat)
+}
 
 type SubHandler struct {
 	service service.SubscriptionService
@@ -85,6 +94,11 @@ func (h *SubHandler) CreateSubscription(c *gin.Context) {
 		return
 	}
 
+	if err := validate.Struct(newSub); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	res, err := h.service.CreateSub(newSub)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -122,6 +136,11 @@ func (h *SubHandler) FullUpdateSubscription(c *gin.Context) {
 		return
 	}
 
+	if err := validate.Struct(subFields); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	if err := h.service.FullUpdateSub(uint(id), subFields); err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "cannot update subscription"})
 		return
@@ -155,6 +174,11 @@ func (h *SubHandler) PatchUpdateSubscription(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&subFields); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid params to update subscription"})
+		return
+	}
+
+	if err := validate.Struct(subFields); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
