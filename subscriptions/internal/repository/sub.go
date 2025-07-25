@@ -39,10 +39,10 @@ func (r *SubscriptionRepository) GetRecord(id uint) (*models.Subscription, error
 func (r *SubscriptionRepository) CreateRecord(serviceName, startDate string, price uint, userID uuid.UUID, endDate *string) (*uint, error) {
 	newRecord := models.Subscription{
 		ServiceName: serviceName,
-		Price: price,
-		UserID: userID,
-		StartDate: startDate,
-		EndDate: endDate,
+		Price:       price,
+		UserID:      userID,
+		StartDate:   startDate,
+		EndDate:     endDate,
 	}
 
 	if err := r.DB.Create(&newRecord).Error; err != nil {
@@ -52,7 +52,12 @@ func (r *SubscriptionRepository) CreateRecord(serviceName, startDate string, pri
 	return &newRecord.ID, nil
 }
 
-func (r *SubscriptionRepository) FullUpdateRecord(id, price uint, serviceName, startDate string, userID uuid.UUID, endDate *string) error {
+func (r *SubscriptionRepository) FullUpdateRecord(
+	id, price uint,
+	serviceName, startDate string,
+	userID uuid.UUID,
+	endDate *string,
+) error {
 	var toUpdateRecord models.Subscription
 
 	if err := r.DB.Take(&toUpdateRecord).Error; err != nil {
@@ -64,7 +69,7 @@ func (r *SubscriptionRepository) FullUpdateRecord(id, price uint, serviceName, s
 	toUpdateRecord.UserID = userID
 	toUpdateRecord.StartDate = startDate
 	toUpdateRecord.EndDate = endDate
-	
+
 	if err := r.DB.Save(&toUpdateRecord).Error; err != nil {
 		return err
 	}
@@ -92,4 +97,39 @@ func (r *SubscriptionRepository) DeleteRecord(id uint) error {
 	}
 
 	return r.DB.Delete(&models.Subscription{}, id).Error
+}
+
+func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
+	var total_sum uint
+
+	// SQL-запрос из PgAdmin
+	// select user_id, service_name, sum(price) as total_sum
+	// from subscriptions
+	// where 
+	// service_name = '' and 
+	// user_id = '' and
+	// ('01-2025' <= start_date and start_date <= '07-2025'
+	// or '01-2025' <= end_date and end_date <= '07-2025')
+	// group by user_id, service_name
+
+	seq := r.DB.Table("subscriptions").Select("SUM(price) AS total_sum")
+
+	seq = seq.Where(`
+		(? <= start_date AND start_date <= ? 
+		OR ? <= end_date AND end_date <= ?)`,
+		startDate, endDate, startDate, endDate,
+	)
+
+	if userID != nil {
+		seq = seq.Where("user_id = ?", userID)
+	}
+	if serviceName != nil {
+		seq = seq.Where("service_name = ?", serviceName)
+	}
+
+	if err := seq.Scan(&total_sum).Error; err != nil {
+		return nil
+	}
+
+	return &total_sum
 }

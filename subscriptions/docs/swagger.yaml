@@ -13,6 +13,11 @@ definitions:
         type: string
       user_id:
         type: string
+    required:
+    - price
+    - service_name
+    - start_date
+    - user_id
     type: object
   schemas.FullSubInfo:
     properties:
@@ -29,6 +34,12 @@ definitions:
         type: string
       user_id:
         type: string
+    required:
+    - id
+    - price
+    - service_name
+    - start_date
+    - user_id
     type: object
   schemas.FullUpdateSub:
     properties:
@@ -43,22 +54,32 @@ definitions:
         type: string
       user_id:
         type: string
+    required:
+    - price
+    - service_name
+    - start_date
+    - user_id
     type: object
   schemas.PatchUpdateSub:
     properties:
       end_date:
+        example: "null"
         format: nullable
         type: string
       price:
+        example: "null"
         format: nullable
         type: string
       service_name:
+        example: "null"
         format: nullable
         type: string
       start_date:
+        example: "null"
         format: nullable
         type: string
       user_id:
+        example: "null"
         format: nullable
         type: string
     type: object
@@ -281,6 +302,63 @@ paths:
               type: string
             type: object
       summary: Update subscription
+      tags:
+      - Subs
+  /subs/sub_sum:
+    get:
+      description: Get subscription price for period and filtered by userID or(and)
+        serviceName
+      parameters:
+      - description: Period start date('mm-yyyy')
+        format: string
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: Period end date('mm-yyyy')
+        format: string
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: User ID
+        format: string
+        in: query
+        name: userID
+        type: string
+      - description: Service name
+        format: string
+        in: query
+        name: serviceName
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get subscription price
       tags:
       - Subs
 swagger: "2.0"

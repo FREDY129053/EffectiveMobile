@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"subscriptions/rest-service/internal/repository"
 	"subscriptions/rest-service/internal/schemas"
+
+	"github.com/google/uuid"
 )
 
 type SubscriptionService struct {
@@ -86,4 +88,8 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 
 func (s *SubscriptionService) DeleteSub(id uint) error {
 	return s.repository.DeleteRecord(id)
+}
+
+func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
+	return s.repository.GetSubsSum(userID, serviceName, startDate, endDate)
 }

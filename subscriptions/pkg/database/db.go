@@ -5,6 +5,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func GetDBConnect() (db *gorm.DB, err error) {
@@ -20,7 +21,9 @@ func GetDBConnect() (db *gorm.DB, err error) {
 	// 	conn.Exec(fmt.Sprintf("CREATE DATABASE %s", "test"))
 	// }
 
-	db, err = gorm.Open(postgres.Open(dsn + " dbname=test"))
+	db, err = gorm.Open(postgres.Open(dsn + " dbname=test"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	
 	return
 }

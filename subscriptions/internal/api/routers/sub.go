@@ -15,5 +15,6 @@ func subscriptionRouter(router *gin.RouterGroup, handler handlers.SubHandler) {
 		subsRouter.PUT("/:id", handler.FullUpdateSubscription)
 		subsRouter.PATCH("/:id", handler.PatchUpdateSubscription)
 		subsRouter.DELETE("/:id", handler.DeleteSubscription)
+		subsRouter.GET("/sub_sum", handler.GetSubscriptionSumInfo)
 	}
 }

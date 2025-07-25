@@ -100,6 +100,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/subs/sub_sum": {
+            "get": {
+                "description": "Get subscription price for period and filtered by userID or(and) serviceName",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subs"
+                ],
+                "summary": "Get subscription price",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Period start date('mm-yyyy')",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Period end date('mm-yyyy')",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Service name",
+                        "name": "serviceName",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/subs/{id}": {
             "get": {
                 "description": "Get subscription from database by id",
@@ -341,6 +423,12 @@ const docTemplate = `{
     "definitions": {
         "schemas.CreateSub": {
             "type": "object",
+            "required": [
+                "price",
+                "service_name",
+                "start_date",
+                "user_id"
+            ],
             "properties": {
                 "end_date": {
                     "type": "string",
@@ -362,6 +450,13 @@ const docTemplate = `{
         },
         "schemas.FullSubInfo": {
             "type": "object",
+            "required": [
+                "id",
+                "price",
+                "service_name",
+                "start_date",
+                "user_id"
+            ],
             "properties": {
                 "end_date": {
                     "type": "string",
@@ -386,6 +481,12 @@ const docTemplate = `{
         },
         "schemas.FullUpdateSub": {
             "type": "object",
+            "required": [
+                "price",
+                "service_name",
+                "start_date",
+                "user_id"
+            ],
             "properties": {
                 "end_date": {
                     "type": "string",
@@ -410,23 +511,28 @@ const docTemplate = `{
             "properties": {
                 "end_date": {
                     "type": "string",
-                    "format": "nullable"
+                    "format": "nullable",
+                    "example": "null"
                 },
                 "price": {
                     "type": "string",
-                    "format": "nullable"
+                    "format": "nullable",
+                    "example": "null"
                 },
                 "service_name": {
                     "type": "string",
-                    "format": "nullable"
+                    "format": "nullable",
+                    "example": "null"
                 },
                 "start_date": {
                     "type": "string",
-                    "format": "nullable"
+                    "format": "nullable",
+                    "example": "null"
                 },
                 "user_id": {
                     "type": "string",
-                    "format": "nullable"
+                    "format": "nullable",
+                    "example": "null"
                 }
             }
         }

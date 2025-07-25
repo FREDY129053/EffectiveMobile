@@ -28,9 +28,9 @@ type FullUpdateSub struct {
 }
 
 type PatchUpdateSub struct {
-	ServiceName string    `json:"service_name,omitempty" swaggertype:"string" format:"nullable"`
-	Price       uint      `json:"price,omitempty" swaggertype:"string" format:"nullable"`
-	UserID      uuid.UUID `json:"user_id,omitempty" swaggertype:"string" format:"nullable"`
-	StartDate   string    `json:"start_date,omitempty" swaggertype:"string" format:"nullable" validate:"omitempty,mm_yyyy_date"`
-	EndDate     *string   `json:"end_date,omitempty" swaggertype:"string" format:"nullable" validate:"omitempty,mm_yyyy_date"`
+	ServiceName string    `json:"service_name,omitempty" swaggertype:"string" format:"nullable" example:"null"`
+	Price       uint      `json:"price,omitempty" swaggertype:"string" format:"nullable" example:"null"`
+	UserID      uuid.UUID `json:"user_id,omitempty" swaggertype:"string" format:"nullable" example:"null"`
+	StartDate   string    `json:"start_date,omitempty" swaggertype:"string" format:"nullable" example:"null" validate:"omitempty,mm_yyyy_date"`
+	EndDate     *string   `json:"end_date,omitempty" swaggertype:"string" format:"nullable" example:"null" validate:"omitempty,mm_yyyy_date"`
 }

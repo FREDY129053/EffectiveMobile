@@ -8,6 +8,6 @@ type Subscription struct {
 	ServiceName string    `json:"service_name" gorm:"size:150;not null"`
 	Price       uint      `json:"price" gorm:"not null"`
 	UserID      uuid.UUID `json:"user_id" gorm:"type:uuid;not null"`
-	StartDate   string    `json:"start_date" gorm:"not null"`
-	EndDate     *string   `json:"end_date,omitempty"`
+	StartDate   string    `json:"start_date" gorm:"not null;size:8"`
+	EndDate     *string   `json:"end_date,omitempty" gorm:"size:8"`
 }

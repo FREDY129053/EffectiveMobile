@@ -9,13 +9,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 var validate *validator.Validate
 
 func init() {
 	validate = validator.New()
-	validate.RegisterValidation("mm_yyyy_date", helpers.ValidateDateMMYYYYFormat)
+	validate.RegisterValidation("mm_yyyy_date", helpers.ValidateDateMMYYYYFormatValidator)
 }
 
 type SubHandler struct {
@@ -216,4 +217,58 @@ func (h *SubHandler) DeleteSubscription(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "subscription deleted"})
+}
+
+// GetSubscriptionSumInfo	godoc
+// @Summary 	Get subscription price
+// @Description Get subscription price for period and filtered by userID or(and) serviceName
+// @Tags		Subs
+// @Produce 	json
+// @Param       startDate    	query     	string  	true  	"Period start date('mm-yyyy')"	Format(string)
+// @Param       endDate    		query     	string  	true  	"Period end date('mm-yyyy')"	Format(string)
+// @Param       userID    		query     	string  	false  	"User ID"						Format(string)
+// @Param       serviceName    	query     	string  	false  	"Service name"					Format(string)
+// @Success 	200 	{object} 	map[string]string
+// @Failure 	400 	{object}  	map[string]string
+// @Failure 	404 	{object}  	map[string]string
+// @Failure 	500 	{object}  	map[string]string
+// @Router 		/subs/sub_sum 	[get]
+func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+	userIDInput := c.Query("userID")
+	serviceNameInput := c.Query("serviceName")
+	
+	if !helpers.ValidateDateMMYYYYFormat(startDate) {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid start date"})
+		return
+	}
+	if !helpers.ValidateDateMMYYYYFormat(endDate) {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid end date"})
+		return
+	}
+
+	var userID *uuid.UUID
+	if userIDInput != "" {
+		userIDParse, err := uuid.Parse(userIDInput)
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+			return
+		}
+		userID = &userIDParse
+	}
+
+	var serviceName *string
+	if serviceNameInput == "" {
+		serviceName = nil
+	}
+	serviceName = &serviceNameInput
+
+	resultSum := h.service.GetSubSum(userID, serviceName, startDate, endDate)
+	if resultSum == nil {
+		c.IndentedJSON(http.StatusOK, gin.H{"total_sum": -1})
+		return
+	}
+	
+	c.IndentedJSON(http.StatusOK, gin.H{"total_sum": resultSum})
 }
