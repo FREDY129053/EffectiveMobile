@@ -2,10 +2,13 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
+	"net/http"
 	"subscriptions/rest-service/internal/repository"
 	"subscriptions/rest-service/internal/schemas"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type SubscriptionService struct {
@@ -28,12 +31,12 @@ func (s *SubscriptionService) GetAllSubs() ([]schemas.FullSubInfo, error) {
 
 	for i, record := range records {
 		result[i] = schemas.FullSubInfo{
-			ID: record.ID,
+			ID:          record.ID,
 			ServiceName: record.ServiceName,
-			Price: record.Price,
-			UserID: record.UserID,
-			StartDate: record.StartDate,
-			EndDate: record.EndDate,
+			Price:       record.Price,
+			UserID:      record.UserID,
+			StartDate:   record.StartDate,
+			EndDate:     record.EndDate,
 		}
 	}
 
@@ -43,7 +46,16 @@ func (s *SubscriptionService) GetAllSubs() ([]schemas.FullSubInfo, error) {
 func (s *SubscriptionService) GetSub(id uint) (*schemas.FullSubInfo, error) {
 	record, err := s.repository.GetRecord(id)
 	if err != nil {
-		return nil, err
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return nil, &schemas.AppError{
+				Code:    http.StatusNotFound,
+				Message: "Subscription not found!",
+				Err:     err,
+			}
+		default:
+			return nil, err
+		}
 	}
 
 	return (*schemas.FullSubInfo)(record), nil
@@ -58,11 +70,11 @@ func (s *SubscriptionService) CreateSub(data schemas.CreateSub) (uint, error) {
 		return 0, err
 	}
 
-	return *res, err
+	return *res, nil
 }
 
 func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub) error {
-	return s.repository.FullUpdateRecord(
+	err := s.repository.FullUpdateRecord(
 		id,
 		data.Price,
 		data.ServiceName,
@@ -70,26 +82,104 @@ func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub)
 		data.UserID,
 		data.EndDate,
 	)
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return &schemas.AppError{
+				Code:    http.StatusNotFound,
+				Message: "Subscription not found",
+				Err:     err,
+			}
+		default:
+			return &schemas.AppError{
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to update subscription",
+				Err:     err,
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSub) error {
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return &schemas.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update data",
+			Err:     err,
+		}
 	}
 
 	var updateFields map[string]any
 	if err = json.Unmarshal(jsonBytes, &updateFields); err != nil {
-		return err
+		return &schemas.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "Failed to parse update fields",
+			Err:     err,
+		}
 	}
 
-	return s.repository.UpdateRecord(id, updateFields)
+	err = s.repository.UpdateRecord(id, updateFields)
+
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return &schemas.AppError{
+				Code:    http.StatusNotFound,
+				Message: "Subscription not found",
+				Err:     err,
+			}
+		default:
+			return &schemas.AppError{
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to patch update subscription",
+				Err:     err,
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *SubscriptionService) DeleteSub(id uint) error {
-	return s.repository.DeleteRecord(id)
+	err := s.repository.DeleteRecord(id)
+
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			return &schemas.AppError{
+				Code:    http.StatusNotFound,
+				Message: "Subscription not found",
+				Err:     err,
+			}
+		default:
+			return &schemas.AppError{
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to delete subscription",
+				Err:     err,
+			}
+		}
+	}
+
+	return nil
 }
 
-func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
-	return s.repository.GetSubsSum(userID, serviceName, startDate, endDate)
+func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) (uint, error) {
+	if *serviceName == "" {
+		serviceName = nil
+	}
+
+	totalSum := s.repository.GetSubsSum(userID, serviceName, startDate, endDate)
+
+	if totalSum == nil {
+		return 0, &schemas.AppError{
+			Code: http.StatusUnprocessableEntity,
+			Message: "Cannot calculate sum of subscriptions",
+			Err: errors.New("returned nil sum from repo"),
+		}
+	}
+
+	return *totalSum, nil
 }

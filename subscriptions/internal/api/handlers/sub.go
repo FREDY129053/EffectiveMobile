@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"subscriptions/rest-service/internal/schemas"
@@ -35,16 +36,21 @@ func NewHandler(serviceInput service.SubscriptionService) SubHandler {
 // @Tags		Subs
 // @Produce		json
 // @Success 	200 	{object} 	[]schemas.FullSubInfo
-// @Failure 	500 	{object}  	map[string]string
+// @Failure 	500 	{object}  	schemas.APIError
 // @Router 		/subs	[get]
 func (h *SubHandler) GetAllSubscriptions(c *gin.Context) {
 	res, err := h.service.GetAllSubs()
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		if serviceErr, ok := err.(*schemas.AppError); ok {
+			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 
-	c.IndentedJSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
 // GetSubscriptionByID	godoc
@@ -54,26 +60,31 @@ func (h *SubHandler) GetAllSubscriptions(c *gin.Context) {
 // @Produce		json
 // @Param       id    	path     	uint  	true  	"Sub ID"	Format(uint)
 // @Success 	200 	{object} 	schemas.FullSubInfo
-// @Failure 	400 	{object}  	map[string]string
-// @Failure 	404 	{object}  	map[string]string
-// @Failure 	500 	{object}  	map[string]string
+// @Failure 	400 	{object}  	schemas.APIError
+// @Failure 	404 	{object}  	schemas.APIError
+// @Failure 	500 	{object}  	schemas.APIError
 // @Router 		/subs/{id} 	[get]
 func (h *SubHandler) GetSubscriptionByID(c *gin.Context) {
 	idStr := c.Param("id")
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
 		return
 	}
 
 	res, err := h.service.GetSub(uint(id))
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
+		if serviceErr, ok := err.(*schemas.AppError); ok {
+			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 
-	c.IndentedJSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
 // CreateSubscription	godoc
@@ -83,30 +94,35 @@ func (h *SubHandler) GetSubscriptionByID(c *gin.Context) {
 // @Accept		json
 // @Produce 	json
 // @Param       newSubscription   	body     	schemas.CreateSub 	true  	"Subscription data"
-// @Success 	201 	{object} 	map[string]uint
-// @Failure 	400 	{object}  	map[string]string
-// @Failure 	500 	{object}  	map[string]string
+// @Success 	201 	{object} 	schemas.CreateReturn
+// @Failure 	400 	{object}  	schemas.APIError
+// @Failure 	500 	{object}  	schemas.APIError
 // @Router 		/subs 	[post]
 func (h *SubHandler) CreateSubscription(c *gin.Context) {
 	var newSub schemas.CreateSub
 
 	if err := c.ShouldBindJSON(&newSub); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid subscription data"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid subscription data"})
 		return
 	}
 
 	if err := validate.Struct(newSub); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format input (must be 'mm-yyyy')"})
 		return
 	}
 
 	res, err := h.service.CreateSub(newSub)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		if serviceErr, ok := err.(*schemas.AppError); ok {
+			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 
-	c.IndentedJSON(http.StatusCreated, gin.H{"id": res})
+	c.JSON(http.StatusCreated, gin.H{"id": res})
 }
 
 // FullUpdateSubscription	godoc
@@ -117,37 +133,43 @@ func (h *SubHandler) CreateSubscription(c *gin.Context) {
 // @Produce 	json
 // @Param       id    				path    uint  	true  	"Subscription ID"	Format(uint)
 // @Param       updateFields    	body    schemas.FullUpdateSub  	true  	"Subscription data"
-// @Success 	200					{object} 	map[string]string
-// @Failure 	400 				{object}  	map[string]string
-// @Failure 	500 				{object}  	map[string]string
+// @Success 	200					{object} 	schemas.MessageReturn
+// @Failure 	400 				{object}  	schemas.APIError
+// @Failure 	500 				{object}  	schemas.APIError
 // @Router 		/subs/{id} 	[put]
 func (h *SubHandler) FullUpdateSubscription(c *gin.Context) {
 	idStr := c.Param("id")
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
 		return
 	}
 
 	var subFields schemas.FullUpdateSub
 
 	if err := c.ShouldBindJSON(&subFields); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid params to update subscription"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid params to update subscription"})
 		return
 	}
 
 	if err := validate.Struct(subFields); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format input (must be 'mm-yyyy')"})
 		return
 	}
 
-	if err := h.service.FullUpdateSub(uint(id), subFields); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "cannot update subscription"})
-		return
+	err = h.service.FullUpdateSub(uint(id), subFields)
+	if err != nil {
+		if serviceErr, ok := err.(*schemas.AppError); ok {
+			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "subscription updated"})
+	c.JSON(http.StatusOK, gin.H{"message": "subscription updated"})
 }
 
 // PatchUpdateSubscription	godoc
@@ -158,37 +180,44 @@ func (h *SubHandler) FullUpdateSubscription(c *gin.Context) {
 // @Produce 	json
 // @Param       id    				path    uint  	true  	"Subscription ID"	Format(uint)
 // @Param       updateFields    	body    schemas.PatchUpdateSub  	true  	"Subscription data"
-// @Success 	200 				{object} 	map[string]string
-// @Failure 	400 				{object}  	map[string]string
-// @Failure 	500 				{object}  	map[string]string
+// @Success 	200 				{object} 	schemas.MessageReturn
+// @Failure 	400 				{object}  	schemas.APIError
+// @Failure 	500 				{object}  	schemas.APIError
 // @Router 		/subs/{id} 	[patch]
 func (h *SubHandler) PatchUpdateSubscription(c *gin.Context) {
 	idStr := c.Param("id")
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
 		return
 	}
 
 	var subFields schemas.PatchUpdateSub
 
 	if err := c.ShouldBindJSON(&subFields); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid params to update subscription"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid params to update subscription"})
 		return
 	}
 
 	if err := validate.Struct(subFields); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Printf("%T\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format input (must be 'mm-yyyy')"})
 		return
 	}
 
-	if err := h.service.PatchUpdateSub(uint(id), subFields); err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "cannot update subscription"})
-		return
+	err = h.service.PatchUpdateSub(uint(id), subFields)
+	if err != nil {
+		if serviceErr, ok := err.(*schemas.AppError); ok {
+			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "subscription updated"})
+	c.JSON(http.StatusOK, gin.H{"message": "subscription updated"})
 }
 
 // DeleteSubscription	godoc
@@ -197,26 +226,32 @@ func (h *SubHandler) PatchUpdateSubscription(c *gin.Context) {
 // @Tags		Subs
 // @Produce 	json
 // @Param       id    	path     	uint  	true  	"Subscription ID"	Format(uint)
-// @Success 	200 	{object} 	map[string]string
-// @Failure 	400 	{object}  	map[string]string
-// @Failure 	404 	{object}  	map[string]string
-// @Failure 	500 	{object}  	map[string]string
+// @Success 	200 	{object} 	schemas.MessageReturn
+// @Failure 	400 	{object}  	schemas.APIError
+// @Failure 	404 	{object}  	schemas.APIError
+// @Failure 	500 	{object}  	schemas.APIError
 // @Router 		/subs/{id} 	[delete]
 func (h *SubHandler) DeleteSubscription(c *gin.Context) {
 	idStr := c.Param("id")
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid unsigned integer parameter"})
 		return
 	}
 
-	if err := h.service.DeleteSub(uint(id)); err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
-		return
+	err = h.service.DeleteSub(uint(id))
+	if err != nil {
+		if serviceErr, ok := err.(*schemas.AppError); ok {
+			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{"message": "subscription deleted"})
+	c.JSON(http.StatusOK, gin.H{"message": "subscription deleted"})
 }
 
 // GetSubscriptionSumInfo	godoc
@@ -228,10 +263,9 @@ func (h *SubHandler) DeleteSubscription(c *gin.Context) {
 // @Param       endDate    		query     	string  	true  	"Period end date('mm-yyyy')"	Format(string)
 // @Param       userID    		query     	string  	false  	"User ID"						Format(string)
 // @Param       serviceName    	query     	string  	false  	"Service name"					Format(string)
-// @Success 	200 	{object} 	map[string]string
-// @Failure 	400 	{object}  	map[string]string
-// @Failure 	404 	{object}  	map[string]string
-// @Failure 	500 	{object}  	map[string]string
+// @Success 	200 	{object} 	schemas.SumReturn
+// @Failure 	400 	{object}  	schemas.APIError
+// @Failure 	422 	{object}  	schemas.APIError
 // @Router 		/subs/sub_sum 	[get]
 func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 	startDate := c.Query("startDate")
@@ -240,11 +274,16 @@ func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 	serviceNameInput := c.Query("serviceName")
 	
 	if !helpers.ValidateDateMMYYYYFormat(startDate) {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid start date"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start date"})
 		return
 	}
 	if !helpers.ValidateDateMMYYYYFormat(endDate) {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid end date"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid end date"})
+		return
+	}
+
+	if startDate[:2] > endDate[:2] || startDate[3:] > endDate[3:] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "startDate cannot be after endDate"})
 		return
 	}
 
@@ -252,23 +291,23 @@ func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 	if userIDInput != "" {
 		userIDParse, err := uuid.Parse(userIDInput)
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
 			return
 		}
 		userID = &userIDParse
 	}
+	
 
-	var serviceName *string
-	if serviceNameInput == "" {
-		serviceName = nil
-	}
-	serviceName = &serviceNameInput
-
-	resultSum := h.service.GetSubSum(userID, serviceName, startDate, endDate)
-	if resultSum == nil {
-		c.IndentedJSON(http.StatusOK, gin.H{"total_sum": -1})
-		return
+	resultSum, err := h.service.GetSubSum(userID, &serviceNameInput, startDate, endDate)
+	if err != nil {
+		if serviceErr, ok := err.(*schemas.AppError); ok {
+			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
 	}
 	
-	c.IndentedJSON(http.StatusOK, gin.H{"total_sum": resultSum})
+	c.JSON(http.StatusOK, gin.H{"total_sum": resultSum})
 }

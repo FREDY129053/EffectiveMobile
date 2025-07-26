@@ -1,5 +1,15 @@
 basePath: /api/v1
 definitions:
+  schemas.APIError:
+    properties:
+      error:
+        type: string
+    type: object
+  schemas.CreateReturn:
+    properties:
+      id:
+        type: integer
+    type: object
   schemas.CreateSub:
     properties:
       end_date:
@@ -60,28 +70,33 @@ definitions:
     - start_date
     - user_id
     type: object
+  schemas.MessageReturn:
+    properties:
+      message:
+        type: string
+    type: object
   schemas.PatchUpdateSub:
     properties:
       end_date:
-        example: "null"
         format: nullable
         type: string
       price:
-        example: "null"
         format: nullable
         type: string
       service_name:
-        example: "null"
         format: nullable
         type: string
       start_date:
-        example: "null"
         format: nullable
         type: string
       user_id:
-        example: "null"
         format: nullable
         type: string
+    type: object
+  schemas.SumReturn:
+    properties:
+      total_sum:
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -104,9 +119,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
       summary: Get subscriptions
       tags:
       - Subs
@@ -127,21 +140,15 @@ paths:
         "201":
           description: Created
           schema:
-            additionalProperties:
-              type: integer
-            type: object
+            $ref: '#/definitions/schemas.CreateReturn'
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
       summary: Create subscription
       tags:
       - Subs
@@ -161,27 +168,19 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.MessageReturn'
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
       summary: Delete subscription
       tags:
       - Subs
@@ -204,21 +203,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
         "404":
           description: Not Found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
       summary: Get subscription info
       tags:
       - Subs
@@ -245,21 +238,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.MessageReturn'
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
       summary: Update subscription
       tags:
       - Subs
@@ -286,21 +273,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.MessageReturn'
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
       summary: Update subscription
       tags:
       - Subs
@@ -337,27 +318,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.SumReturn'
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
+            $ref: '#/definitions/schemas.APIError'
+        "422":
+          description: Unprocessable Entity
           schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/schemas.APIError'
       summary: Get subscription price
       tags:
       - Subs
