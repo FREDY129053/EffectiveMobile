@@ -2,6 +2,7 @@ package repository
 
 import (
 	"subscriptions/rest-service/internal/models"
+	"subscriptions/rest-service/pkg/logger"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -20,6 +21,7 @@ func NewRepository(database *gorm.DB) SubscriptionRepository {
 func (r *SubscriptionRepository) GetAllRecords() ([]models.Subscription, error) {
 	var records []models.Subscription
 	if err := r.DB.Find(&records).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return nil, err
 	}
 
@@ -30,6 +32,7 @@ func (r *SubscriptionRepository) GetRecord(id uint) (*models.Subscription, error
 	var record models.Subscription
 
 	if err := r.DB.Take(&record, id).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return nil, gorm.ErrRecordNotFound
 	}
 
@@ -46,6 +49,7 @@ func (r *SubscriptionRepository) CreateRecord(serviceName, startDate string, pri
 	}
 
 	if err := r.DB.Create(&newRecord).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return nil, err
 	}
 
@@ -61,6 +65,7 @@ func (r *SubscriptionRepository) FullUpdateRecord(
 	var toUpdateRecord models.Subscription
 
 	if err := r.DB.Take(&toUpdateRecord).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return gorm.ErrRecordNotFound
 	}
 
@@ -71,6 +76,7 @@ func (r *SubscriptionRepository) FullUpdateRecord(
 	toUpdateRecord.EndDate = endDate
 
 	if err := r.DB.Save(&toUpdateRecord).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return err
 	}
 
@@ -81,10 +87,12 @@ func (r *SubscriptionRepository) UpdateRecord(id uint, fields map[string]any) er
 	var company models.Subscription
 
 	if err := r.DB.Take(&company, id).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return gorm.ErrRecordNotFound
 	}
 
 	if err := r.DB.Model(&company).Updates(fields).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return err
 	}
 
@@ -93,6 +101,7 @@ func (r *SubscriptionRepository) UpdateRecord(id uint, fields map[string]any) er
 
 func (r *SubscriptionRepository) DeleteRecord(id uint) error {
 	if err := r.DB.Take(&models.Subscription{}, id).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return gorm.ErrRecordNotFound
 	}
 
@@ -102,7 +111,7 @@ func (r *SubscriptionRepository) DeleteRecord(id uint) error {
 func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
 	var total_sum uint
 
-	// SQL-запрос из PgAdmin
+	// Примерный SQL-запрос из PgAdmin
 	// select user_id, service_name, sum(price) as total_sum
 	// from subscriptions
 	// where 
@@ -112,12 +121,26 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 	// or '01-2025' <= end_date and end_date <= '07-2025')
 	// group by user_id, service_name
 
+	// В итоге косячный, если передавать промежуток большой (10-2022 и 10-2026) - ломается
+	// Как при валидации промежутка в хендлере можно через подстроки делать
+
 	seq := r.DB.Table("subscriptions").Select("SUM(price) AS total_sum")
+	newStartDate := startDate[3:] + "-" + startDate[:2]
+	newEndDate := endDate[3:] + "-" + endDate[:2]
 
 	seq = seq.Where(`
-		(? <= start_date AND start_date <= ? 
-		OR ? <= end_date AND end_date <= ?)`,
-		startDate, endDate, startDate, endDate,
+		(
+			(
+				? <= (SUBSTRING(start_date FROM 4 FOR 4) || '-' || SUBSTRING(start_date FROM 1 FOR 2)) AND 
+				(SUBSTRING(start_date FROM 4 FOR 4) || '-' || SUBSTRING(start_date FROM 1 FOR 2)) <= ? 
+			)	
+		OR 
+			(
+				? <= (SUBSTRING(end_date FROM 4 FOR 4) || '-' || SUBSTRING(end_date FROM 1 FOR 2)) AND 
+				(SUBSTRING(end_date FROM 4 FOR 4) || '-' || SUBSTRING(end_date FROM 1 FOR 2)) <= ?
+			)
+		)`,
+		newStartDate, newEndDate, newStartDate, newEndDate,
 	)
 
 	if userID != nil {
@@ -128,6 +151,7 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 	}
 
 	if err := seq.Scan(&total_sum).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return nil
 	}
 

@@ -3,9 +3,11 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"subscriptions/rest-service/internal/repository"
 	"subscriptions/rest-service/internal/schemas"
+	"subscriptions/rest-service/pkg/logger"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -24,6 +26,7 @@ func NewService(repo repository.SubscriptionRepository) SubscriptionService {
 func (s *SubscriptionService) GetAllSubs() ([]schemas.FullSubInfo, error) {
 	records, err := s.repository.GetAllRecords()
 	if err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return nil, err
 	}
 
@@ -39,13 +42,14 @@ func (s *SubscriptionService) GetAllSubs() ([]schemas.FullSubInfo, error) {
 			EndDate:     record.EndDate,
 		}
 	}
-
+	
 	return result, nil
 }
 
 func (s *SubscriptionService) GetSub(id uint) (*schemas.FullSubInfo, error) {
 	record, err := s.repository.GetRecord(id)
 	if err != nil {
+		logger.PrintLog(err.Error(), "error")
 		switch err {
 		case gorm.ErrRecordNotFound:
 			return nil, &schemas.AppError{
@@ -58,6 +62,7 @@ func (s *SubscriptionService) GetSub(id uint) (*schemas.FullSubInfo, error) {
 		}
 	}
 
+	logger.PrintLog(fmt.Sprintf("Get record with ID = %d", id))
 	return (*schemas.FullSubInfo)(record), nil
 }
 
@@ -67,9 +72,11 @@ func (s *SubscriptionService) CreateSub(data schemas.CreateSub) (uint, error) {
 	)
 
 	if err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return 0, err
 	}
 
+	logger.PrintLog("Subscription record created")
 	return *res, nil
 }
 
@@ -83,6 +90,7 @@ func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub)
 		data.EndDate,
 	)
 	if err != nil {
+		logger.PrintLog(err.Error(), "error")
 		switch err {
 		case gorm.ErrRecordNotFound:
 			return &schemas.AppError{
@@ -99,12 +107,14 @@ func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub)
 		}
 	}
 
+	logger.PrintLog("Subscription updated")
 	return nil
 }
 
 func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSub) error {
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return &schemas.AppError{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid update data",
@@ -114,6 +124,7 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 
 	var updateFields map[string]any
 	if err = json.Unmarshal(jsonBytes, &updateFields); err != nil {
+		logger.PrintLog(err.Error(), "error")
 		return &schemas.AppError{
 			Code:    http.StatusBadRequest,
 			Message: "Failed to parse update fields",
@@ -124,6 +135,7 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 	err = s.repository.UpdateRecord(id, updateFields)
 
 	if err != nil {
+		logger.PrintLog(err.Error(), "error")
 		switch err {
 		case gorm.ErrRecordNotFound:
 			return &schemas.AppError{
@@ -140,6 +152,7 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 		}
 	}
 
+	logger.PrintLog("Subscription updated")
 	return nil
 }
 
@@ -147,6 +160,7 @@ func (s *SubscriptionService) DeleteSub(id uint) error {
 	err := s.repository.DeleteRecord(id)
 
 	if err != nil {
+		logger.PrintLog(err.Error(), "error")
 		switch err {
 		case gorm.ErrRecordNotFound:
 			return &schemas.AppError{
@@ -163,6 +177,7 @@ func (s *SubscriptionService) DeleteSub(id uint) error {
 		}
 	}
 
+	logger.PrintLog("Subscription deleted")
 	return nil
 }
 
@@ -174,6 +189,7 @@ func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, 
 	totalSum := s.repository.GetSubsSum(userID, serviceName, startDate, endDate)
 
 	if totalSum == nil {
+		logger.PrintLog("error get sum with this params", "error")
 		return 0, &schemas.AppError{
 			Code: http.StatusUnprocessableEntity,
 			Message: "Cannot calculate sum of subscriptions",
@@ -181,5 +197,6 @@ func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, 
 		}
 	}
 
+	logger.PrintLog("Get sum")
 	return *totalSum, nil
 }
