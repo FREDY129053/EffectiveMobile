@@ -1,27 +1,28 @@
 package database
 
 import (
+	"fmt"
 	_ "fmt"
 
+	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
 func GetDBConnect() (db *gorm.DB, err error) {
-	// TODO: .env vars
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s port=%s sslmode=disable",
+		viper.GetString("DB_HOST"),
+		viper.GetString("DB_USER"),
+		viper.GetString("DB_PASSWORD"),
+		viper.GetString("DB_PORT"),
+	)
+	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
-	dsn := "host=localhost user=fredy password=postgres port=5432 sslmode=disable"
-	// conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	conn.Exec(fmt.Sprintf("CREATE DATABASE %s", viper.GetString("DB_NAME")))
 
-	// var isDBExist bool
-	// t := conn.Raw(fmt.Sprintf("SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('%s');", "test"))
-	
-	// if err = t.Row().Scan(&isDBExist); err != nil {
-	// 	conn.Exec(fmt.Sprintf("CREATE DATABASE %s", "test"))
-	// }
-
-	db, err = gorm.Open(postgres.Open(dsn + " dbname=test"), &gorm.Config{
+	db, err = gorm.Open(postgres.Open(dsn + " dbname=" + viper.GetString("DB_NAME")), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	
