@@ -9,16 +9,15 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o app .
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o app ./cmd
 
 FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=builder /app/subscriptions .
-
-COPY .env .
+COPY --from=builder /app/app .
+COPY --from=builder /app/.env .
 
 EXPOSE 8080
 
-CMD ["./subscriptions"]
+CMD ["./app"]

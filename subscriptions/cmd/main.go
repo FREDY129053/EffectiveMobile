@@ -13,18 +13,19 @@ import (
 )
 
 func init() {
-	viper.AddConfigPath("config/")
+	viper.AddConfigPath("./")
 	viper.SetConfigName(".env")
 	viper.SetConfigType("env")
-	viper.SetDefault("BD_HOST", "localhost")
-	viper.SetDefault("BD_PORT", "5432")
-	viper.SetDefault("BD_NAME", "test")
+	viper.SetDefault("DB_HOST", "main_db")
+	viper.SetDefault("DB_PORT", "5432")
+	viper.SetDefault("POSTGRES_DB", "test")
+	viper.SetDefault("APP_HOST", "0.0.0.0")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("\033[31merror reading .env file: %v\033[0m", err)
 	}
 
-	pass, user := viper.GetString("DB_PASSWORD"), viper.GetString("DB_USER")
+	pass, user := viper.GetString("POSTGRES_PASSWORD"), viper.GetString("POSTGRES_USER")
 	if pass == "" || user == "" {
 		log.Fatalf("\033[31myou forgot set password or user for database!\033[0m")
 	}
@@ -47,7 +48,7 @@ func main() {
 
 	router := routers.SetupRouter(subsHandler)
 
-	if err = router.Run("localhost:8080"); err != nil {
+	if err = router.Run(viper.GetString("APP_HOST") + ":8080"); err != nil {
 		log.Panicf("error start server: %v", err)
 	}
 }

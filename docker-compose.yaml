@@ -2,6 +2,13 @@ services:
   db:
     image: postgres:16
     container_name: main_db
+    env_file:
+      - subscriptions/.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       - "5433:5432"
     networks:
@@ -10,10 +17,13 @@ services:
   api:
     container_name: main_api
     build:
-      context: .
-      dockerfile: subscriptions/dockerfile
+      context: subscriptions
+      dockerfile: dockerfile
+    env_file:
+      - subscriptions/.env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - api_network
     ports:
