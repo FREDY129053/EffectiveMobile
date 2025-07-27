@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16
+    container_name: main_db
+    ports:
+      - "5433:5432"
+    networks:
+      - api_network
+
+  api:
+    container_name: main_api
+    build:
+      context: .
+      dockerfile: subscriptions/dockerfile
+    depends_on:
+      - db
+    networks:
+      - api_network
+    ports:
+      - "8080:8080"
+
+networks:
+  api_network:
+    driver: bridge
