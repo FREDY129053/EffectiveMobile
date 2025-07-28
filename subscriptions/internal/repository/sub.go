@@ -3,6 +3,7 @@ package repository
 import (
 	"subscriptions/rest-service/internal/models"
 	"subscriptions/rest-service/pkg/logger"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -109,38 +110,25 @@ func (r *SubscriptionRepository) DeleteRecord(id uint) error {
 }
 
 func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
+	var subsInfo []models.Subscription
 	var total_sum uint
-
-	// Примерный SQL-запрос из PgAdmin
-	// select user_id, service_name, sum(price) as total_sum
-	// from subscriptions
-	// where 
-	// service_name = '' and 
-	// user_id = '' and
-	// ('01-2025' <= start_date and start_date <= '07-2025'
-	// or '01-2025' <= end_date and end_date <= '07-2025')
-	// group by user_id, service_name
-
-	// В итоге косячный, если передавать промежуток большой (10-2022 и 10-2026) - ломается
-	// Как при валидации промежутка в хендлере можно через подстроки делать
-
-	seq := r.DB.Table("subscriptions").Select("SUM(price) AS total_sum")
-	newStartDate := startDate[3:] + "-" + startDate[:2]
-	newEndDate := endDate[3:] + "-" + endDate[:2]
+	seq := r.DB.Table("subscriptions").Select("*")
 
 	seq = seq.Where(`
 		(
 			(
-				? <= (SUBSTRING(start_date FROM 4 FOR 4) || '-' || SUBSTRING(start_date FROM 1 FOR 2)) AND 
-				(SUBSTRING(start_date FROM 4 FOR 4) || '-' || SUBSTRING(start_date FROM 1 FOR 2)) <= ? 
+					TO_DATE(?, 'MM-YYYY') <= TO_DATE(start_date, 'MM-YYYY') 
+				AND 
+					TO_DATE(start_date, 'MM-YYYY') <= TO_DATE(?, 'MM-YYYY') 
 			)	
-		OR 
+			OR 
 			(
-				? <= (SUBSTRING(end_date FROM 4 FOR 4) || '-' || SUBSTRING(end_date FROM 1 FOR 2)) AND 
-				(SUBSTRING(end_date FROM 4 FOR 4) || '-' || SUBSTRING(end_date FROM 1 FOR 2)) <= ?
+					TO_DATE(?, 'MM-YYYY') <= TO_DATE(end_date, 'MM-YYYY') 
+				AND 
+					TO_DATE(end_date, 'MM-YYYY') <= TO_DATE(?, 'MM-YYYY') 
 			)
 		)`,
-		newStartDate, newEndDate, newStartDate, newEndDate,
+		startDate, endDate, startDate, endDate,
 	)
 
 	if userID != nil {
@@ -150,10 +138,36 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 		seq = seq.Where("service_name = ?", serviceName)
 	}
 
-	if err := seq.Scan(&total_sum).Error; err != nil {
+	if err := seq.Scan(&subsInfo).Error; err != nil {
 		logger.PrintLog(err.Error(), "error")
 		return nil
 	}
 
-	return &total_sum
+	// Подсчет суммы стоимости подписок
+	startDateDate, _ := time.Parse("01-2006", startDate)
+	endDateDate, _ := time.Parse("01-2006", endDate)
+	var nullDate time.Time
+	logger.PrintLog("SUM PRICE FOR EACH SUB")
+	for _, sub := range subsInfo {
+		subStartDate, _ := time.Parse("01-2006", sub.StartDate)
+
+		var subEndDate time.Time
+		if sub.EndDate != nil {
+			subEndDate, _ = time.Parse("01-2006", *sub.EndDate)
+		}
+
+		if subStartDate.Before(startDateDate) {
+			subStartDate = startDateDate
+		}
+
+		if endDateDate.Before(subEndDate) || subEndDate.Equal(nullDate) {
+			subEndDate = endDateDate
+		}
+
+		datesDiffMonths := int64(subEndDate.Sub(subStartDate).Hours()/24/30) + 1
+
+		total_sum += uint(datesDiffMonths * int64(sub.Price))
+	}
+
+	return &total_sum 
 }

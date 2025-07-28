@@ -21,6 +21,15 @@ func GetDBConnect() (db *gorm.DB, err error) {
 		viper.GetString("DB_PORT"),
 	)
 
+	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	var isDBExist bool
+	t := conn.Raw(fmt.Sprintf("SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('%s');", viper.GetString("POSTGRES_DB")))
+	
+	if err = t.Row().Scan(&isDBExist); err != nil {
+		conn.Exec(fmt.Sprintf("CREATE DATABASE %s", viper.GetString("POSTGRES_DB")))
+	}
+
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
