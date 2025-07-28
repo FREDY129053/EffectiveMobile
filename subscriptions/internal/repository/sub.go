@@ -147,7 +147,7 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 	startDateDate, _ := time.Parse("01-2006", startDate)
 	endDateDate, _ := time.Parse("01-2006", endDate)
 	var nullDate time.Time
-	logger.PrintLog("SUM PRICE FOR EACH SUB")
+	
 	for _, sub := range subsInfo {
 		subStartDate, _ := time.Parse("01-2006", sub.StartDate)
 
