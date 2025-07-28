@@ -7,6 +7,7 @@ import (
 	"subscriptions/rest-service/internal/schemas"
 	"subscriptions/rest-service/internal/service"
 	"subscriptions/rest-service/pkg/helpers"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -18,6 +19,17 @@ var validate *validator.Validate
 func init() {
 	validate = validator.New()
 	validate.RegisterValidation("mm_yyyy_date", helpers.ValidateDateMMYYYYFormatValidator)
+}
+
+func checkStartDateBeforeEndDate(startDate, endDate string) bool {
+	startDateDate, _ := time.Parse("01-2006", startDate)
+	endDateDate, _ := time.Parse("01-2006", endDate)
+
+	if endDateDate.Before(startDateDate) {
+		return false
+	}
+
+	return true
 }
 
 type SubHandler struct {
@@ -111,6 +123,13 @@ func (h *SubHandler) CreateSubscription(c *gin.Context) {
 		return
 	}
 
+	if newSub.EndDate != nil {
+		if !checkStartDateBeforeEndDate(newSub.StartDate, *newSub.EndDate) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "startDate cannot be after endDate"})
+			return
+		}
+	}
+
 	res, err := h.service.CreateSub(newSub)
 	if err != nil {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
@@ -156,6 +175,13 @@ func (h *SubHandler) FullUpdateSubscription(c *gin.Context) {
 	if err := validate.Struct(subFields); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format input (must be 'mm-yyyy')"})
 		return
+	}
+
+	if subFields.EndDate != nil {
+		if !checkStartDateBeforeEndDate(subFields.StartDate, *subFields.EndDate) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "startDate cannot be after endDate"})
+			return
+		}
 	}
 
 	err = h.service.FullUpdateSub(uint(id), subFields)
@@ -204,6 +230,13 @@ func (h *SubHandler) PatchUpdateSubscription(c *gin.Context) {
 		log.Printf("%T\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format input (must be 'mm-yyyy')"})
 		return
+	}
+
+	if subFields.EndDate != nil && subFields.StartDate != nil {
+		if !checkStartDateBeforeEndDate(*subFields.StartDate, *subFields.EndDate) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "startDate cannot be after endDate"})
+			return
+		}
 	}
 
 	err = h.service.PatchUpdateSub(uint(id), subFields)
@@ -272,7 +305,7 @@ func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 	endDate := c.Query("endDate")
 	userIDInput := c.Query("userID")
 	serviceNameInput := c.Query("serviceName")
-	
+
 	if !helpers.ValidateDateMMYYYYFormat(startDate) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start date"})
 		return
@@ -282,7 +315,7 @@ func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 		return
 	}
 
-	if startDate[:2] > endDate[:2] || startDate[3:] > endDate[3:] {
+	if !checkStartDateBeforeEndDate(startDate, endDate) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "startDate cannot be after endDate"})
 		return
 	}
@@ -296,7 +329,6 @@ func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 		}
 		userID = &userIDParse
 	}
-	
 
 	resultSum, err := h.service.GetSubSum(userID, &serviceNameInput, startDate, endDate)
 	if err != nil {
@@ -308,6 +340,6 @@ func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 			return
 		}
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"total_sum": resultSum})
 }
