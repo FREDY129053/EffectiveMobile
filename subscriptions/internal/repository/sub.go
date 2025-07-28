@@ -135,7 +135,7 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 		seq = seq.Where("user_id = ?", userID)
 	}
 	if serviceName != nil {
-		seq = seq.Where("service_name = ?", serviceName)
+		seq = seq.Where("service_name ILIKE ?", serviceName)
 	}
 
 	if err := seq.Scan(&subsInfo).Error; err != nil {
