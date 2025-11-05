@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"database/sql"
+	"fmt"
 	"subscriptions/rest-service/internal/models"
 	"subscriptions/rest-service/pkg/logger"
 	"time"
@@ -120,64 +122,73 @@ func (r *SubscriptionRepository) DeleteRecord(id uint) error {
 }
 
 func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
-	var subsInfo []models.Subscription
-	var total_sum uint
-	seq := r.DB.Table("subscriptions").Select("*")
+	var totalSum sql.NullInt64
 
-	seq = seq.Where(`
-		(
-			(
-					TO_DATE(?, 'MM-YYYY') <= TO_DATE(start_date, 'MM-YYYY') 
-				AND 
-					TO_DATE(start_date, 'MM-YYYY') <= TO_DATE(?, 'MM-YYYY') 
-			)	
-			OR 
-			(
-					TO_DATE(?, 'MM-YYYY') <= TO_DATE(end_date, 'MM-YYYY') 
-				AND 
-					TO_DATE(end_date, 'MM-YYYY') <= TO_DATE(?, 'MM-YYYY') 
-			)
-		)`,
-		startDate, endDate, startDate, endDate,
-	)
+	args := []interface{}{startDate, endDate}
+	nextPlaceholder := 3
+	whereClauses := ""
 
 	if userID != nil {
-		seq = seq.Where("user_id = ?", userID)
-	}
-	if serviceName != nil {
-		seq = seq.Where("service_name ILIKE ?", serviceName)
+		whereClauses += fmt.Sprintf(" AND user_id = $%d", nextPlaceholder)
+		args = append(args, *userID)
+		nextPlaceholder++
 	}
 
-	if err := seq.Scan(&subsInfo).Error; err != nil {
+	if serviceName != nil {
+		whereClauses += fmt.Sprintf(" AND service_name ILIKE $%d", nextPlaceholder)
+		args = append(args, *serviceName)
+		nextPlaceholder++
+	}
+
+	rawSQL := `
+		SELECT
+			COALESCE(SUM(
+				(
+					EXTRACT(
+						MONTH FROM AGE(real_sub_end, real_sub_start)
+					) 
+					+ 
+					EXTRACT(
+						YEAR FROM AGE(real_sub_end, real_sub_start)
+					) * 12
+				) * price
+			)) AS total_sum
+		FROM (
+			SELECT
+				service_name,
+				user_id,
+				price, 
+				start_date, 
+				end_date, 
+			
+				CASE WHEN (
+					EXTRACT(
+						MONTH FROM AGE(start_date, $1::date)
+					) 
+					+ 
+					EXTRACT(
+						YEAR FROM AGE(start_date, $1::date)) * 12
+					) > 0 THEN start_date ELSE $1::date END AS real_sub_start,
+			
+				CASE WHEN (
+					EXTRACT(
+						MONTH FROM AGE(end_date, $2::date)
+					) 
+					+ 
+					EXTRACT(
+						YEAR FROM AGE(end_date, $2::date)) * 12
+					) < 0 THEN end_date ELSE $2::date END AS real_sub_end
+			
+			FROM subscriptions
+			WHERE
+				($1::date, $2::date) OVERLAPS 
+				(start_date::date, end_date::date)` + whereClauses + `);`
+
+	if err := r.DB.Raw(rawSQL, args...).Scan(&totalSum).Error; err != nil {
 		logger.PrintLog(err.Error(), "error")
 		return nil
 	}
 
-	// Подсчет суммы стоимости подписок
-	startDateDate, _ := time.Parse("01-2006", startDate)
-	endDateDate, _ := time.Parse("01-2006", endDate)
-	var nullDate time.Time
-
-	for _, sub := range subsInfo {
-		subStartDate, _ := time.Parse("01-2006", "11-2025")
-
-		var subEndDate time.Time
-		if sub.EndDate != nil {
-			subEndDate, _ = time.Parse("01-2006", "12-2025")
-		}
-
-		if subStartDate.Before(startDateDate) {
-			subStartDate = startDateDate
-		}
-
-		if endDateDate.Before(subEndDate) || subEndDate.Equal(nullDate) {
-			subEndDate = endDateDate
-		}
-
-		datesDiffMonths := int64(subEndDate.Sub(subStartDate).Hours()/24/30) + 1
-
-		total_sum += uint(datesDiffMonths * int64(sub.Price))
-	}
-
-	return &total_sum
+	total := uint(totalSum.Int64)
+	return &total
 }

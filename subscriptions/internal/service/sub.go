@@ -237,7 +237,30 @@ func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, 
 		serviceName = nil
 	}
 
-	totalSum := s.repository.GetSubsSum(userID, serviceName, startDate, endDate)
+	startDateParsed, err := time.Parse("01-2006", startDate)
+	if err != nil {
+		return 0, &schemas.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid start date format",
+			Err:     err,
+		}
+	}
+
+	endDateParsed, err := time.Parse("01-2006", endDate)
+	if err != nil {
+		return 0, &schemas.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid end date format",
+			Err:     err,
+		}
+	}
+
+	y1, m1, d1 := startDateParsed.Date()
+	y2, m2, d2 := endDateParsed.Date()
+	startDateSQL := fmt.Sprintf("%04d-%02d-%02d", y1, m1, d1)
+	endDateSQL := fmt.Sprintf("%04d-%02d-%02d", y2, m2, d2)
+
+	totalSum := s.repository.GetSubsSum(userID, serviceName, startDateSQL, endDateSQL)
 
 	if totalSum == nil {
 		logger.PrintLog("error get sum with this params", "error")
