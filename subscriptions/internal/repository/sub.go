@@ -19,14 +19,23 @@ func NewRepository(database *gorm.DB) SubscriptionRepository {
 	}
 }
 
-func (r *SubscriptionRepository) GetAllRecords() ([]models.Subscription, error) {
+func (r *SubscriptionRepository) GetRecords(offset, size int) ([]models.Subscription, *int, error) {
 	var records []models.Subscription
-	if err := r.DB.Find(&records).Error; err != nil {
+
+	var total int64
+	if err := r.DB.Model(&models.Subscription{}).Count(&total).Error; err != nil {
 		logger.PrintLog(err.Error(), "error")
-		return nil, err
+		return nil, nil, err
 	}
 
-	return records, nil
+	totalPages := int((total + int64(size) - 1) / int64(size))
+
+	if err := r.DB.Limit(size).Offset(offset).Find(&records).Error; err != nil {
+		logger.PrintLog(err.Error(), "error")
+		return nil, nil, err
+	}
+
+	return records, &totalPages, nil
 }
 
 func (r *SubscriptionRepository) GetRecord(id uint) (*models.Subscription, error) {
@@ -147,7 +156,7 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 	startDateDate, _ := time.Parse("01-2006", startDate)
 	endDateDate, _ := time.Parse("01-2006", endDate)
 	var nullDate time.Time
-	
+
 	for _, sub := range subsInfo {
 		subStartDate, _ := time.Parse("01-2006", sub.StartDate)
 
@@ -169,5 +178,5 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 		total_sum += uint(datesDiffMonths * int64(sub.Price))
 	}
 
-	return &total_sum 
+	return &total_sum
 }

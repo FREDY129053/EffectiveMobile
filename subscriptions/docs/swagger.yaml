@@ -75,6 +75,37 @@ definitions:
       message:
         type: string
     type: object
+  schemas.Pagination:
+    properties:
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page_number:
+        type: integer
+      size:
+        type: integer
+      total_pages:
+        type: integer
+    required:
+    - has_next
+    - has_prev
+    - page_number
+    - size
+    - total_pages
+    type: object
+  schemas.PaginationResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/schemas.Pagination'
+      subscriptions:
+        items:
+          $ref: '#/definitions/schemas.FullSubInfo'
+        type: array
+    required:
+    - pagination
+    - subscriptions
+    type: object
   schemas.PatchUpdateSub:
     properties:
       end_date:
@@ -107,15 +138,26 @@ paths:
   /subs:
     get:
       description: Get all subscriptions from database
+      parameters:
+      - default: 1
+        description: Current page number
+        format: uint
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of subscriptions per page
+        format: uint
+        in: query
+        name: size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/schemas.FullSubInfo'
-            type: array
+            $ref: '#/definitions/schemas.PaginationResponse'
         "500":
           description: Internal Server Error
           schema:

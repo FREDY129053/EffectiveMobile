@@ -43,23 +43,23 @@ func NewHandler(serviceInput service.SubscriptionService) SubHandler {
 // @Description Get all subscriptions from database
 // @Tags		Subs
 // @Produce		json
-// @Param pageNumber query uint true "Current page number" Format(uint)
-// @Param subsCount query uint true "Number of subscriptions per page" Format(uint)
-// @Success 	200 	{object} 	[]schemas.FullSubInfo
+// @Param page query uint false "Current page number" Format(uint) default(1)
+// @Param size query uint false "Number of subscriptions per page" Format(uint) default(10)
+// @Success 	200 	{object} 	schemas.PaginationResponse
 // @Failure 	500 	{object}  	schemas.APIError
 // @Router 		/subs	[get]
 func (h *SubHandler) GetAllSubscriptions(c *gin.Context) {
-	pageNumber := c.DefaultQuery("page", "0")
+	pageNumber := c.DefaultQuery("page", "1")
 	subsCount := c.DefaultQuery("size", "10")
 
-	pageNumberInt, err := strconv.ParseUint(pageNumber, 10, 32)
-	if err != nil {
+	pageNumberInt, err := strconv.Atoi(pageNumber)
+	if err != nil || pageNumberInt < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page number"})
 		return
 	}
 
-	subsCountInt, err := strconv.ParseUint(subsCount, 10, 64)
-	if err != nil {
+	subsCountInt, err := strconv.Atoi(subsCount)
+	if err != nil || subsCountInt <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid size number"})
 		return
 	}

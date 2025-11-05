@@ -23,8 +23,9 @@ func NewService(repo repository.SubscriptionRepository) SubscriptionService {
 	}
 }
 
-func (s *SubscriptionService) GetAllSubs(pageNumber, pageSize uint64) ([]schemas.FullSubInfo, error) {
-	records, err := s.repository.GetAllRecords()
+func (s *SubscriptionService) GetAllSubs(pageNumber, pageSize int) (*schemas.PaginationResponse, error) {
+	offset := (pageNumber - 1) * pageSize
+	records, totalPages, err := s.repository.GetRecords(offset, pageSize)
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
 		return nil, err
@@ -43,7 +44,20 @@ func (s *SubscriptionService) GetAllSubs(pageNumber, pageSize uint64) ([]schemas
 		}
 	}
 
-	return result, nil
+	paginationInfo := schemas.Pagination{
+		PageNumber: pageNumber,
+		Size:       pageSize,
+		TotalPages: *totalPages,
+		HasNext:    pageNumber < *totalPages,
+		HasPrev:    pageNumber > 1 && *totalPages > 0,
+	}
+
+	response := schemas.PaginationResponse{
+		Subscriptions: result,
+		Pagination:    paginationInfo,
+	}
+
+	return &response, nil
 }
 
 func (s *SubscriptionService) GetSub(id uint) (*schemas.FullSubInfo, error) {

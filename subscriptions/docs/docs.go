@@ -25,14 +25,29 @@ const docTemplate = `{
                     "Subs"
                 ],
                 "summary": "Get subscriptions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "default": 1,
+                        "description": "Current page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "uint",
+                        "default": 10,
+                        "description": "Number of subscriptions per page",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/schemas.FullSubInfo"
-                            }
+                            "$ref": "#/definitions/schemas.PaginationResponse"
                         }
                     },
                     "500": {
@@ -461,6 +476,51 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.Pagination": {
+            "type": "object",
+            "required": [
+                "has_next",
+                "has_prev",
+                "page_number",
+                "size",
+                "total_pages"
+            ],
+            "properties": {
+                "has_next": {
+                    "type": "boolean"
+                },
+                "has_prev": {
+                    "type": "boolean"
+                },
+                "page_number": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas.PaginationResponse": {
+            "type": "object",
+            "required": [
+                "pagination",
+                "subscriptions"
+            ],
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/schemas.Pagination"
+                },
+                "subscriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.FullSubInfo"
+                    }
+                }
+            }
+        },
         "schemas.PatchUpdateSub": {
             "type": "object",
             "properties": {
@@ -507,6 +567,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	// LeftDelim:        "{{",
+	// RightDelim:       "}}",
 }
 
 func init() {

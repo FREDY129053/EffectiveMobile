@@ -32,5 +32,18 @@ type PatchUpdateSub struct {
 	Price       *uint      `json:"price,omitempty" swaggertype:"string" format:"nullable"`
 	UserID      *uuid.UUID `json:"user_id,omitempty" swaggertype:"string" format:"nullable"`
 	StartDate   *string    `json:"start_date,omitempty" swaggertype:"string" format:"nullable" validate:"omitempty,mm_yyyy_date"`
-	EndDate     *string   `json:"end_date,omitempty" swaggertype:"string" format:"nullable" validate:"omitempty,mm_yyyy_date"`
+	EndDate     *string    `json:"end_date,omitempty" swaggertype:"string" format:"nullable" validate:"omitempty,mm_yyyy_date"`
+}
+
+type Pagination struct {
+	PageNumber int  `json:"page_number" validate:"required,numeric,gt=0"`
+	Size       int  `json:"size" validate:"required,numeric,gt=0"`
+	TotalPages int  `json:"total_pages" validate:"required,numeric,gt=0"`
+	HasNext    bool `json:"has_next" validate:"required"`
+	HasPrev    bool `json:"has_prev" validate:"required"`
+}
+
+type PaginationResponse struct {
+	Subscriptions []FullSubInfo `json:"subscriptions" validate:"required"`
+	Pagination    Pagination    `json:"pagination" validate:"required"`
 }
