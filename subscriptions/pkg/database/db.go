@@ -2,7 +2,7 @@ package database
 
 import (
 	"fmt"
-	_ "fmt"
+	"log"
 	"subscriptions/rest-service/internal/models"
 
 	"github.com/spf13/viper"
@@ -22,10 +22,13 @@ func GetDBConnect() (db *gorm.DB, err error) {
 	)
 
 	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
 
 	var isDBExist bool
 	t := conn.Raw(fmt.Sprintf("SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('%s');", viper.GetString("POSTGRES_DB")))
-	
+
 	if err = t.Row().Scan(&isDBExist); err != nil {
 		conn.Exec(fmt.Sprintf("CREATE DATABASE %s", viper.GetString("POSTGRES_DB")))
 	}
@@ -35,6 +38,6 @@ func GetDBConnect() (db *gorm.DB, err error) {
 	})
 
 	db.AutoMigrate(&models.Subscription{})
-	
-	return
+
+	return db, err
 }

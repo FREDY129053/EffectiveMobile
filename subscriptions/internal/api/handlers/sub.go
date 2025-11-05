@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"subscriptions/rest-service/internal/helpers"
 	"subscriptions/rest-service/internal/schemas"
 	"subscriptions/rest-service/internal/service"
-	"subscriptions/rest-service/pkg/helpers"
 	"time"
 
 	"github.com/gin-gonic/gin"

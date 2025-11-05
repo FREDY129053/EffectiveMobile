@@ -14,8 +14,6 @@ func ValidateDateMMYYYYFormatValidator(fl validator.FieldLevel) bool {
 
 func ValidateDateMMYYYYFormat(date string) bool {
 	_, err := time.Parse("01-2006", date)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
+
