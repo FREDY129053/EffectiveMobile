@@ -1,13 +1,13 @@
 package main
 
 import (
+	"log"
+	"subscriptions/rest-service/docs"
 	"subscriptions/rest-service/internal/api/handlers"
 	"subscriptions/rest-service/internal/api/routers"
 	"subscriptions/rest-service/internal/repository"
 	"subscriptions/rest-service/internal/service"
 	"subscriptions/rest-service/pkg/database"
-	"log"
-	_ "subscriptions/rest-service/docs"
 
 	"github.com/spf13/viper"
 )
@@ -20,6 +20,7 @@ func init() {
 	viper.SetDefault("DB_PORT", "5432")
 	viper.SetDefault("POSTGRES_DB", "test")
 	viper.SetDefault("APP_HOST", "0.0.0.0")
+	viper.SetDefault("APP_PORT", "8080")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("\033[31merror reading .env file: %v\033[0m", err)
@@ -37,6 +38,10 @@ func init() {
 // @host      localhost:8080
 // @BasePath  /api/v1
 func main() {
+	address := viper.GetString("APP_HOST") + ":" + viper.GetString("APP_PORT")
+
+	docs.SwaggerInfo.Host = address
+
 	db, err := database.GetDBConnect()
 	if err != nil {
 		log.Fatalf("\033[31merror connect to db: %v\033[0m", err)
@@ -47,8 +52,7 @@ func main() {
 	subsHandler := handlers.NewHandler(subsService)
 
 	router := routers.SetupRouter(subsHandler)
-
-	if err = router.Run(viper.GetString("APP_HOST") + ":8080"); err != nil {
+	if err = router.Run(address); err != nil {
 		log.Panicf("error start server: %v", err)
 	}
 }

@@ -23,7 +23,7 @@ func NewService(repo repository.SubscriptionRepository) SubscriptionService {
 	}
 }
 
-func (s *SubscriptionService) GetAllSubs() ([]schemas.FullSubInfo, error) {
+func (s *SubscriptionService) GetAllSubs(pageNumber, pageSize uint64) ([]schemas.FullSubInfo, error) {
 	records, err := s.repository.GetAllRecords()
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
@@ -42,7 +42,7 @@ func (s *SubscriptionService) GetAllSubs() ([]schemas.FullSubInfo, error) {
 			EndDate:     record.EndDate,
 		}
 	}
-	
+
 	return result, nil
 }
 
@@ -70,7 +70,6 @@ func (s *SubscriptionService) CreateSub(data schemas.CreateSub) (uint, error) {
 	res, err := s.repository.CreateRecord(
 		data.ServiceName, data.StartDate, data.Price, data.UserID, data.EndDate,
 	)
-
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
 		return 0, err
@@ -133,7 +132,6 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 	}
 
 	err = s.repository.UpdateRecord(id, updateFields)
-
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
 		switch err {
@@ -158,7 +156,6 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 
 func (s *SubscriptionService) DeleteSub(id uint) error {
 	err := s.repository.DeleteRecord(id)
-
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
 		switch err {
@@ -191,9 +188,9 @@ func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, 
 	if totalSum == nil {
 		logger.PrintLog("error get sum with this params", "error")
 		return 0, &schemas.AppError{
-			Code: http.StatusUnprocessableEntity,
+			Code:    http.StatusUnprocessableEntity,
 			Message: "Cannot calculate sum of subscriptions",
-			Err: errors.New("returned nil sum from repo"),
+			Err:     errors.New("returned nil sum from repo"),
 		}
 	}
 

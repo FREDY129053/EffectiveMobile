@@ -25,11 +25,7 @@ func checkStartDateBeforeEndDate(startDate, endDate string) bool {
 	startDateDate, _ := time.Parse("01-2006", startDate)
 	endDateDate, _ := time.Parse("01-2006", endDate)
 
-	if endDateDate.Before(startDateDate) {
-		return false
-	}
-
-	return true
+	return !endDateDate.Before(startDateDate)
 }
 
 type SubHandler struct {
@@ -47,11 +43,28 @@ func NewHandler(serviceInput service.SubscriptionService) SubHandler {
 // @Description Get all subscriptions from database
 // @Tags		Subs
 // @Produce		json
+// @Param pageNumber query uint true "Current page number" Format(uint)
+// @Param subsCount query uint true "Number of subscriptions per page" Format(uint)
 // @Success 	200 	{object} 	[]schemas.FullSubInfo
 // @Failure 	500 	{object}  	schemas.APIError
 // @Router 		/subs	[get]
 func (h *SubHandler) GetAllSubscriptions(c *gin.Context) {
-	res, err := h.service.GetAllSubs()
+	pageNumber := c.DefaultQuery("page", "0")
+	subsCount := c.DefaultQuery("size", "10")
+
+	pageNumberInt, err := strconv.ParseUint(pageNumber, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page number"})
+		return
+	}
+
+	subsCountInt, err := strconv.ParseUint(subsCount, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid size number"})
+		return
+	}
+
+	res, err := h.service.GetAllSubs(pageNumberInt, subsCountInt)
 	if err != nil {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
