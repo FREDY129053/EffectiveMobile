@@ -1,6 +1,10 @@
 package schemas
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type CreateSub struct {
 	ServiceName string    `json:"service_name" validate:"required"`
@@ -11,12 +15,12 @@ type CreateSub struct {
 }
 
 type FullSubInfo struct {
-	ID          uint      `json:"id" validate:"required"`
-	ServiceName string    `json:"service_name" validate:"required"`
-	Price       uint      `json:"price" validate:"required,numeric,gt=0"`
-	UserID      uuid.UUID `json:"user_id" validate:"required,uuid"`
-	StartDate   string    `json:"start_date" validate:"required,mm_yyyy_date"`
-	EndDate     *string   `json:"end_date,omitempty" swaggertype:"string" format:"nullable" validate:"omitempty,mm_yyyy_date"`
+	ID          uint       `json:"id" validate:"required"`
+	ServiceName string     `json:"service_name" validate:"required"`
+	Price       uint       `json:"price" validate:"required,numeric,gt=0"`
+	UserID      uuid.UUID  `json:"user_id" validate:"required,uuid"`
+	StartDate   time.Time  `json:"start_date" validate:"required"`
+	EndDate     *time.Time `json:"end_date,omitempty" swaggertype:"string" format:"nullable" validate:"omitempty"`
 }
 
 type FullUpdateSub struct {

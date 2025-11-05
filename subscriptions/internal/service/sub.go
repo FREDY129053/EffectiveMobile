@@ -8,6 +8,7 @@ import (
 	"subscriptions/rest-service/internal/repository"
 	"subscriptions/rest-service/internal/schemas"
 	"subscriptions/rest-service/pkg/logger"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -81,8 +82,25 @@ func (s *SubscriptionService) GetSub(id uint) (*schemas.FullSubInfo, error) {
 }
 
 func (s *SubscriptionService) CreateSub(data schemas.CreateSub) (uint, error) {
+	startDate, err := time.Parse("01-2006", data.StartDate)
+	if err != nil {
+		logger.PrintLog(err.Error(), "error")
+		return 0, err
+	}
+
+	var endDate *time.Time
+
+	if data.EndDate != nil {
+		t, err := time.Parse("01-2006", *data.EndDate)
+		if err != nil {
+			logger.PrintLog(err.Error(), "error")
+			return 0, nil
+		}
+		endDate = &t
+	}
+
 	res, err := s.repository.CreateRecord(
-		data.ServiceName, data.StartDate, data.Price, data.UserID, data.EndDate,
+		data.ServiceName, startDate, data.Price, data.UserID, endDate,
 	)
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
@@ -94,13 +112,35 @@ func (s *SubscriptionService) CreateSub(data schemas.CreateSub) (uint, error) {
 }
 
 func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub) error {
-	err := s.repository.FullUpdateRecord(
+	startDate, err := time.Parse("01-2006", data.StartDate)
+	if err != nil {
+		return &schemas.AppError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid start date format",
+			Err:     err,
+		}
+	}
+
+	var endDate *time.Time
+	if data.EndDate != nil {
+		t, err := time.Parse("01-2006", *data.EndDate)
+		if err != nil {
+			return &schemas.AppError{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid end date format",
+				Err:     err,
+			}
+		}
+		endDate = &t
+	}
+
+	err = s.repository.FullUpdateRecord(
 		id,
 		data.Price,
 		data.ServiceName,
-		data.StartDate,
+		startDate,
 		data.UserID,
-		data.EndDate,
+		endDate,
 	)
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")

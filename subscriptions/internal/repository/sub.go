@@ -49,7 +49,7 @@ func (r *SubscriptionRepository) GetRecord(id uint) (*models.Subscription, error
 	return &record, nil
 }
 
-func (r *SubscriptionRepository) CreateRecord(serviceName, startDate string, price uint, userID uuid.UUID, endDate *string) (*uint, error) {
+func (r *SubscriptionRepository) CreateRecord(serviceName string, startDate time.Time, price uint, userID uuid.UUID, endDate *time.Time) (*uint, error) {
 	newRecord := models.Subscription{
 		ServiceName: serviceName,
 		Price:       price,
@@ -68,9 +68,10 @@ func (r *SubscriptionRepository) CreateRecord(serviceName, startDate string, pri
 
 func (r *SubscriptionRepository) FullUpdateRecord(
 	id, price uint,
-	serviceName, startDate string,
+	serviceName string,
+	startDate time.Time,
 	userID uuid.UUID,
-	endDate *string,
+	endDate *time.Time,
 ) error {
 	var toUpdateRecord models.Subscription
 
@@ -158,11 +159,11 @@ func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *stri
 	var nullDate time.Time
 
 	for _, sub := range subsInfo {
-		subStartDate, _ := time.Parse("01-2006", sub.StartDate)
+		subStartDate, _ := time.Parse("01-2006", "11-2025")
 
 		var subEndDate time.Time
 		if sub.EndDate != nil {
-			subEndDate, _ = time.Parse("01-2006", *sub.EndDate)
+			subEndDate, _ = time.Parse("01-2006", "12-2025")
 		}
 
 		if subStartDate.Before(startDateDate) {
