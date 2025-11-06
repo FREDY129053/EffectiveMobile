@@ -55,20 +55,30 @@ func (r *SubscriptionRepository) GetRecord(id uint) (*models.Subscription, error
 }
 
 func (r *SubscriptionRepository) CreateRecord(serviceName string, startDate time.Time, price uint, userID uuid.UUID, endDate *time.Time) (*uint, error) {
-	newRecord := models.Subscription{
-		ServiceName: serviceName,
-		Price:       price,
-		UserID:      userID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-	}
+	var newID uint
 
-	if err := r.DB.Create(&newRecord).Error; err != nil {
-		logger.PrintLog(err.Error(), "error")
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		newRecord := models.Subscription{
+			ServiceName: serviceName,
+			Price:       price,
+			UserID:      userID,
+			StartDate:   startDate,
+			EndDate:     endDate,
+		}
+
+		if err := tx.Create(&newRecord).Error; err != nil {
+			logger.PrintLog(err.Error(), "error")
+			return err
+		}
+
+		newID = newRecord.ID
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	return &newRecord.ID, nil
+	return &newID, nil
 }
 
 func (r *SubscriptionRepository) FullUpdateRecord(
@@ -78,50 +88,66 @@ func (r *SubscriptionRepository) FullUpdateRecord(
 	userID uuid.UUID,
 	endDate *time.Time,
 ) error {
-	var toUpdateRecord models.Subscription
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		var toUpdateRecord models.Subscription
 
-	if err := r.DB.Take(&toUpdateRecord).Error; err != nil {
-		logger.PrintLog(err.Error(), "error")
-		return gorm.ErrRecordNotFound
-	}
+		if err := r.DB.Take(&toUpdateRecord, id).Error; err != nil {
+			logger.PrintLog(err.Error(), "error")
+			return gorm.ErrRecordNotFound
+		}
 
-	toUpdateRecord.ServiceName = serviceName
-	toUpdateRecord.Price = price
-	toUpdateRecord.UserID = userID
-	toUpdateRecord.StartDate = startDate
-	toUpdateRecord.EndDate = endDate
+		toUpdateRecord.ServiceName = serviceName
+		toUpdateRecord.Price = price
+		toUpdateRecord.UserID = userID
+		toUpdateRecord.StartDate = startDate
+		toUpdateRecord.EndDate = endDate
 
-	if err := r.DB.Save(&toUpdateRecord).Error; err != nil {
-		logger.PrintLog(err.Error(), "error")
-		return err
-	}
+		if err := tx.Save(&toUpdateRecord).Error; err != nil {
+			logger.PrintLog(err.Error(), "error")
+			return err
+		}
 
-	return nil
+		return nil
+	})
+
+	return err
 }
 
 func (r *SubscriptionRepository) UpdateRecord(id uint, fields map[string]any) error {
-	var company models.Subscription
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		var record models.Subscription
 
-	if err := r.DB.Take(&company, id).Error; err != nil {
-		logger.PrintLog(err.Error(), "error")
-		return gorm.ErrRecordNotFound
-	}
+		if err := r.DB.Take(&record, id).Error; err != nil {
+			logger.PrintLog(err.Error(), "error")
+			return gorm.ErrRecordNotFound
+		}
 
-	if err := r.DB.Model(&company).Updates(fields).Error; err != nil {
-		logger.PrintLog(err.Error(), "error")
-		return err
-	}
+		if err := tx.Model(&record).Updates(fields).Error; err != nil {
+			logger.PrintLog(err.Error(), "error")
+			return err
+		}
 
-	return nil
+		return nil
+	})
+
+	return err
 }
 
 func (r *SubscriptionRepository) DeleteRecord(id uint) error {
-	if err := r.DB.Take(&models.Subscription{}, id).Error; err != nil {
-		logger.PrintLog(err.Error(), "error")
-		return gorm.ErrRecordNotFound
-	}
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := r.DB.Take(&models.Subscription{}, id).Error; err != nil {
+			logger.PrintLog(err.Error(), "error")
+			return gorm.ErrRecordNotFound
+		}
 
-	return r.DB.Delete(&models.Subscription{}, id).Error
+		if err := tx.Delete(&models.Subscription{}, id).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
