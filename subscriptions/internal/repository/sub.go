@@ -14,12 +14,22 @@ import (
 	"gorm.io/gorm"
 )
 
+type SubscriptionRepo interface {
+	GetRecords(offset, size int) ([]models.Subscription, *int, error)
+	GetRecord(id uint) (*models.Subscription, error)
+	CreateRecord(serviceName string, startDate time.Time, price uint, userID uuid.UUID, endDate *time.Time) (*uint, error)
+	FullUpdateRecord(id, price uint, serviceName string, startDate time.Time, userID uuid.UUID, endDate *time.Time) error
+	UpdateRecord(id uint, fields map[string]any) error
+	DeleteRecord(id uint) error
+	GetSubsSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint
+}
+
 type SubscriptionRepository struct {
 	DB *gorm.DB
 }
 
-func NewRepository(database *gorm.DB) SubscriptionRepository {
-	return SubscriptionRepository{
+func NewRepository(database *gorm.DB) SubscriptionRepo {
+	return &SubscriptionRepository{
 		DB: database,
 	}
 }

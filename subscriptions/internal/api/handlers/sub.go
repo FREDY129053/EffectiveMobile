@@ -46,6 +46,9 @@ func NewHandler(serviceInput service.SubscriptionService) SubHandler {
 // @Param page query uint false "Current page number" Format(uint) default(1)
 // @Param size query uint false "Number of subscriptions per page" Format(uint) default(10)
 // @Success 	200 	{object} 	schemas.PaginationResponse
+//
+//	@Failure 	400 	{object}  	schemas.APIError
+//
 // @Failure 	500 	{object}  	schemas.APIError
 // @Router 		/subs	[get]
 func (h *SubHandler) GetAllSubscriptions(c *gin.Context) {

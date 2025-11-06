@@ -15,10 +15,10 @@ import (
 )
 
 type SubscriptionService struct {
-	repository repository.SubscriptionRepository
+	repository repository.SubscriptionRepo
 }
 
-func NewService(repo repository.SubscriptionRepository) SubscriptionService {
+func NewService(repo repository.SubscriptionRepo) SubscriptionService {
 	return SubscriptionService{
 		repository: repo,
 	}
