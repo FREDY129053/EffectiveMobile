@@ -1,13 +1,19 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
 	"subscriptions/rest-service/docs"
 	"subscriptions/rest-service/internal/api/handlers"
 	"subscriptions/rest-service/internal/api/routers"
 	"subscriptions/rest-service/internal/repository"
 	"subscriptions/rest-service/internal/service"
 	"subscriptions/rest-service/pkg/database"
+	"syscall"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -52,7 +58,31 @@ func main() {
 	subsHandler := handlers.NewHandler(subsService)
 
 	router := routers.SetupRouter(subsHandler)
-	if err = router.Run(address); err != nil {
-		log.Panicf("error start server: %v", err)
+
+	server := &http.Server{
+		Addr:    address,
+		Handler: router,
 	}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		log.Printf("Starting server at %s\n", address)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("\033[31merror starting server: %v\033[0m", err)
+		}
+	}()
+
+	<-quit
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("\033[31mserver forced to shutdown: %v\033[0m", err)
+	}
+
+	log.Println("Server stopped gracefully")
 }
