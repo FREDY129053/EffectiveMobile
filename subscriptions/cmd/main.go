@@ -46,7 +46,7 @@ func init() {
 func main() {
 	address := viper.GetString("APP_HOST") + ":" + viper.GetString("APP_PORT")
 
-	docs.SwaggerInfo.Host = address
+	docs.SwaggerInfo.Host = "localhost:" + viper.GetString("APP_PORT")
 
 	db, err := database.GetDBConnect()
 	if err != nil {
