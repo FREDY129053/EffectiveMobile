@@ -29,7 +29,11 @@ func (s *SubscriptionService) GetAllSubs(pageNumber, pageSize int) (*schemas.Pag
 	records, totalPages, err := s.repository.GetRecords(offset, pageSize)
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
-		return nil, err
+		return nil, &schemas.AppError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to retrieve subscriptions",
+			Err:     err,
+		}
 	}
 
 	result := make([]schemas.FullSubInfo, len(records))
@@ -69,11 +73,15 @@ func (s *SubscriptionService) GetSub(id uint) (*schemas.FullSubInfo, error) {
 		case gorm.ErrRecordNotFound:
 			return nil, &schemas.AppError{
 				Code:    http.StatusNotFound,
-				Message: "Subscription not found!",
+				Message: "sumbscription not found!",
 				Err:     err,
 			}
 		default:
-			return nil, err
+			return nil, &schemas.AppError{
+				Code:    http.StatusInternalServerError,
+				Message: "failed to retrieve subscription",
+				Err:     err,
+			}
 		}
 	}
 
@@ -104,7 +112,11 @@ func (s *SubscriptionService) CreateSub(data schemas.CreateSub) (uint, error) {
 	)
 	if err != nil {
 		logger.PrintLog(err.Error(), "error")
-		return 0, err
+		return 0, &schemas.AppError{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to create subscription",
+			Err:     err,
+		}
 	}
 
 	logger.PrintLog("Subscription record created")
@@ -116,7 +128,7 @@ func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub)
 	if err != nil {
 		return &schemas.AppError{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid start date format",
+			Message: "invalid start date format",
 			Err:     err,
 		}
 	}
@@ -127,7 +139,7 @@ func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub)
 		if err != nil {
 			return &schemas.AppError{
 				Code:    http.StatusBadRequest,
-				Message: "Invalid end date format",
+				Message: "invalid end date format",
 				Err:     err,
 			}
 		}
@@ -148,13 +160,13 @@ func (s *SubscriptionService) FullUpdateSub(id uint, data schemas.FullUpdateSub)
 		case gorm.ErrRecordNotFound:
 			return &schemas.AppError{
 				Code:    http.StatusNotFound,
-				Message: "Subscription not found",
+				Message: "subscription not found",
 				Err:     err,
 			}
 		default:
 			return &schemas.AppError{
 				Code:    http.StatusInternalServerError,
-				Message: "Failed to update subscription",
+				Message: "failed to update subscription",
 				Err:     err,
 			}
 		}
@@ -170,7 +182,7 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 		logger.PrintLog(err.Error(), "error")
 		return &schemas.AppError{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid update data",
+			Message: "invalid update data",
 			Err:     err,
 		}
 	}
@@ -180,7 +192,7 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 		logger.PrintLog(err.Error(), "error")
 		return &schemas.AppError{
 			Code:    http.StatusBadRequest,
-			Message: "Failed to parse update fields",
+			Message: "failed to parse update fields",
 			Err:     err,
 		}
 	}
@@ -192,13 +204,13 @@ func (s *SubscriptionService) PatchUpdateSub(id uint, data schemas.PatchUpdateSu
 		case gorm.ErrRecordNotFound:
 			return &schemas.AppError{
 				Code:    http.StatusNotFound,
-				Message: "Subscription not found",
+				Message: "subscription not found",
 				Err:     err,
 			}
 		default:
 			return &schemas.AppError{
 				Code:    http.StatusInternalServerError,
-				Message: "Failed to patch update subscription",
+				Message: "failed to patch update subscription",
 				Err:     err,
 			}
 		}
@@ -216,13 +228,13 @@ func (s *SubscriptionService) DeleteSub(id uint) error {
 		case gorm.ErrRecordNotFound:
 			return &schemas.AppError{
 				Code:    http.StatusNotFound,
-				Message: "Subscription not found",
+				Message: "subscription not found",
 				Err:     err,
 			}
 		default:
 			return &schemas.AppError{
 				Code:    http.StatusInternalServerError,
-				Message: "Failed to delete subscription",
+				Message: "failed to delete subscription",
 				Err:     err,
 			}
 		}
@@ -241,7 +253,7 @@ func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, 
 	if err != nil {
 		return 0, &schemas.AppError{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid start date format",
+			Message: "invalid start date format",
 			Err:     err,
 		}
 	}
@@ -250,7 +262,7 @@ func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, 
 	if err != nil {
 		return 0, &schemas.AppError{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid end date format",
+			Message: "invalid end date format",
 			Err:     err,
 		}
 	}
@@ -266,7 +278,7 @@ func (s *SubscriptionService) GetSubSum(userID *uuid.UUID, serviceName *string, 
 		logger.PrintLog("error get sum with this params", "error")
 		return 0, &schemas.AppError{
 			Code:    http.StatusUnprocessableEntity,
-			Message: "Cannot calculate sum of subscriptions",
+			Message: "cannot calculate sum of subscriptions",
 			Err:     errors.New("returned nil sum from repo"),
 		}
 	}

@@ -1,3 +1,6 @@
+/*
+Package repository implements the data access layer for subscription records.
+*/
 package repository
 
 import (
@@ -124,7 +127,7 @@ func (r *SubscriptionRepository) DeleteRecord(id uint) error {
 func (r *SubscriptionRepository) GetSubsSum(userID *uuid.UUID, serviceName *string, startDate, endDate string) *uint {
 	var totalSum sql.NullInt64
 
-	args := []interface{}{startDate, endDate}
+	args := []any{startDate, endDate}
 	nextPlaceholder := 3
 	whereClauses := ""
 

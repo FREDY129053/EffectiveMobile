@@ -69,10 +69,10 @@ func (h *SubHandler) GetAllSubscriptions(c *gin.Context) {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
 			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	c.JSON(http.StatusOK, res)
@@ -103,10 +103,10 @@ func (h *SubHandler) GetSubscriptionByID(c *gin.Context) {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
 			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	c.JSON(http.StatusOK, res)
@@ -148,10 +148,10 @@ func (h *SubHandler) CreateSubscription(c *gin.Context) {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
 			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"id": res})
@@ -202,10 +202,10 @@ func (h *SubHandler) FullUpdateSubscription(c *gin.Context) {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
 			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "subscription updated"})
@@ -257,10 +257,10 @@ func (h *SubHandler) PatchUpdateSubscription(c *gin.Context) {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
 			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "subscription updated"})
@@ -291,10 +291,10 @@ func (h *SubHandler) DeleteSubscription(c *gin.Context) {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
 			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "subscription deleted"})
@@ -348,10 +348,10 @@ func (h *SubHandler) GetSubscriptionSumInfo(c *gin.Context) {
 		if serviceErr, ok := err.(*schemas.AppError); ok {
 			c.JSON(serviceErr.Code, gin.H{"error": serviceErr.Message})
 			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"total_sum": resultSum})
